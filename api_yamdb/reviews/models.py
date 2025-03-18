@@ -18,6 +18,13 @@ class Genre(models.Model):
     slug = models.SlugField(max_length=50)
 
 
+class Title(models.Model):
+    name = models.CharField(max_length=256)
+    year = models.IntegerField()
+    description = models.TextField()
+    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
+    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+
 
 class Review(models.Model):
     pass
