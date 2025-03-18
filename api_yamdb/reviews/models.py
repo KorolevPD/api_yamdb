@@ -3,6 +3,8 @@ from django.core.validators import MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
+from reviews.constants import TEXT_LEN
+
 
 class User(AbstractUser):
     bio = models.TextField()
@@ -28,13 +30,40 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    text = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
-    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)])
-    pub_date = models.DateTimeField(auto_now_add=True)
+    title = models.ForeignKey(Title, on_delete=models.CASCADE, verbose_name="Название произведения")
+    text = models.TextField(verbose_name="Текст отзыва")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
+    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)], verbose_name="Оценка")
+    pub_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
+
+    class Meta:
+        ordering = ["-pub_date"]
+        verbose_name = "Отзыв"
+        verbose_name_plural = "Отзывы"
+        default_related_name = 'reviews'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['title', 'author'],
+                name='unique_following'
+            )
+        ]
+
+    def __str__(self):
+        return self.text[:TEXT_LEN]
 
 
 class Comment(models.Model):
-    text = models.TextField()
-    author = models.ForeignKey(User, on_delete=models.CASCADE)
-    pub_date = models.DateTimeField(auto_now_add=True)
+    review = models.ForeignKey(Review, on_delete=models.CASCADE,
+                               related_name="comments", verbose_name="Отзыв")
+    text = models.TextField(verbose_name="Текст комментария")
+    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
+    pub_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
+
+    class Meta:
+        ordering = ["-pub_date"]
+        verbose_name = "Комментарий"
+        verbose_name_plural = "Комментарии"
+        default_related_name = 'comments'
+
+    def __str__(self):
+        return self.text[:TEXT_LEN]
