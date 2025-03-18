@@ -3,7 +3,6 @@ from django.contrib import admin
 from reviews.models import Comment, Review
 
 
-# Register your models here.
 @admin.register(Review)
 class ReviewAdmin(admin.ModelAdmin):
     list_display = ("id", "title", "author", "score", "pub_date")

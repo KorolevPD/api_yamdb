@@ -32,19 +32,19 @@ class Title(models.Model):
 
 class Review(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
-                              verbose_name="Название произведения")
-    text = models.TextField(verbose_name="Текст отзыва")
+                              verbose_name='Название произведения')
+    text = models.TextField(verbose_name='Текст отзыва')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
-                               verbose_name="Автор")
+                               verbose_name='Автор')
     score = models.PositiveIntegerField(validators=[MaxValueValidator(10)],
-                                        verbose_name="Оценка")
+                                        verbose_name='Оценка')
     pub_date = models.DateTimeField(auto_now_add=True,
-                                    verbose_name="Дата публикации")
+                                    verbose_name='Дата публикации')
 
     class Meta:
-        ordering = ["-pub_date"]
-        verbose_name = "Отзыв"
-        verbose_name_plural = "Отзывы"
+        ordering = ['-pub_date']
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
         default_related_name = 'reviews'
         constraints = [
             models.UniqueConstraint(
@@ -59,17 +59,17 @@ class Review(models.Model):
 
 class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE,
-                               related_name="comments", verbose_name="Отзыв")
-    text = models.TextField(verbose_name="Текст комментария")
+                               related_name='comments', verbose_name='Отзыв')
+    text = models.TextField(verbose_name='Текст комментария')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
-                               verbose_name="Автор")
+                               verbose_name='Автор')
     pub_date = models.DateTimeField(auto_now_add=True,
-                                    verbose_name="Дата публикации")
+                                    verbose_name='Дата публикации')
 
     class Meta:
-        ordering = ["-pub_date"]
-        verbose_name = "Комментарий"
-        verbose_name_plural = "Комментарии"
+        ordering = ['-pub_date']
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
         default_related_name = 'comments'
 
     def __str__(self):
