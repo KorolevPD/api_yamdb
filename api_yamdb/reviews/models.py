@@ -30,11 +30,15 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    title = models.ForeignKey(Title, on_delete=models.CASCADE, verbose_name="Название произведения")
+    title = models.ForeignKey(Title, on_delete=models.CASCADE,
+                              verbose_name="Название произведения")
     text = models.TextField(verbose_name="Текст отзыва")
-    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
-    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)], verbose_name="Оценка")
-    pub_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               verbose_name="Автор")
+    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)],
+                                        verbose_name="Оценка")
+    pub_date = models.DateTimeField(auto_now_add=True,
+                                    verbose_name="Дата публикации")
 
     class Meta:
         ordering = ["-pub_date"]
@@ -56,8 +60,10 @@ class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE,
                                related_name="comments", verbose_name="Отзыв")
     text = models.TextField(verbose_name="Текст комментария")
-    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
-    pub_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               verbose_name="Автор")
+    pub_date = models.DateTimeField(auto_now_add=True,
+                                    verbose_name="Дата публикации")
 
     class Meta:
         ordering = ["-pub_date"]
