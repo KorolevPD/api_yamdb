@@ -1,14 +1,13 @@
-from django.conf import settings
 from django.core.validators import MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from reviews.constants import TEXT_LEN
+from reviews.constants import TEXT_LEN, USER_ROLES
 
 
 class User(AbstractUser):
     bio = models.TextField()
-    role = models.CharField(choices=settings.USER_ROLES, max_length=64)
+    role = models.CharField(choices=USER_ROLES, max_length=64)
 
 
 class Category(models.Model):
