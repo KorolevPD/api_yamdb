@@ -1,8 +1,9 @@
+from rest_framework.pagination import PageNumberPagination
 from django.shortcuts import get_object_or_404
 from rest_framework import viewsets, permissions
 
 from permissions import IsOwnerOrReadOnly
-from reviews.models import Review
+from reviews.models import Review, User
 from api.serializers import ReviewSerializer, UserSerializer
 
 
@@ -23,5 +24,5 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
 class UserViewSet(viewsets.ModelViewSet):
     serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,
-                          IsOwnerOrReadOnly)
+    queryset = User.objects.all()
+    lookup_field = 'username'

@@ -5,7 +5,7 @@ from .views import UserViewSet
 
 
 router = SimpleRouter()
-router.register('users', UserViewSet)
+router.register('users', UserViewSet, 'users')
 
 urlpatterns = [
     path('v1/', include(router.urls)),
