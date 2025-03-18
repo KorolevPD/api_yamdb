@@ -9,7 +9,8 @@ class User(AbstractUser):
 
 
 class Category(models.Model):
-    pass
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(max_length=50)
 
 
 class Genre(models.Model):
