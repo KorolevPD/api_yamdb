@@ -8,6 +8,7 @@ from reviews.constants import TEXT_LEN, USER_ROLES
 class User(AbstractUser):
     bio = models.TextField()
     role = models.CharField(choices=USER_ROLES, max_length=64)
+    confirmation_code = models.CharField(max_length=20, blank=True, null=True)
 
 
 class Category(models.Model):
