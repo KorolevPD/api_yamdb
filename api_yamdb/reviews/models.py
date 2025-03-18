@@ -14,7 +14,9 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
-    pass
+    name = models.CharField(max_length=256)
+    slug = models.SlugField(max_length=50)
+
 
 
 class Review(models.Model):
