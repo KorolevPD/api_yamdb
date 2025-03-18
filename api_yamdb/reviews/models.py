@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
@@ -27,7 +28,10 @@ class Title(models.Model):
 
 
 class Review(models.Model):
-    pass
+    text = models.TextField()
+    author = models.ForeignKey(User, on_delete=models.CASCADE)
+    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)])
+    pub_date = models.DateTimeField(auto_now_add=True)
 
 
 class Comment(models.Model):
