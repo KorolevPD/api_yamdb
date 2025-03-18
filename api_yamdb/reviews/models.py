@@ -1,13 +1,11 @@
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
 
 class User(AbstractUser):
-    pass
-
-
-class Title(models.Model):
-    pass
+    bio = models.TextField()
+    role = models.CharField(choices=settings.USER_ROLES, max_length=64)
 
 
 class Category(models.Model):
