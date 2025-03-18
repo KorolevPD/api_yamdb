@@ -1,21 +1,20 @@
 import random
 import string
+
 from django.shortcuts import get_object_or_404
 from django.core.mail import send_mail
 from django.conf import settings
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from django.contrib.auth import get_user_model
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from .serializers import SignupSerializer, UserProfileSerializer
 from permissions import IsOwnerOrReadOnly
-from reviews.models import Review
-from api.serializers import ReviewSerializer
+from reviews.models import Review, User
+from api.serializers import ReviewSerializer, UserSerializer
 
-
-User = get_user_model()
 
 def generate_confirmation_code(length=6):
     # Генерирует случайный числовой код длиной 6 символов.
@@ -93,7 +92,8 @@ class UserProfileViewSet(viewsets.GenericViewSet):
 
 class ReviewViewSet(viewsets.ModelViewSet):
     serializer_class = ReviewSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsOwnerOrReadOnly]
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,
+                          IsOwnerOrReadOnly)
 
     def get_title(self):
         return get_object_or_404(Review, pk=self.kwargs['title_id'])
@@ -103,3 +103,9 @@ class ReviewViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, title=self.get_title())
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    serializer_class = UserSerializer
+    queryset = User.objects.all()
+    lookup_field = 'username'

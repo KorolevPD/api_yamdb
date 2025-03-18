@@ -1,14 +1,13 @@
-from django.conf import settings
 from django.core.validators import MaxValueValidator
 from django.contrib.auth.models import AbstractUser
 from django.db import models
 
-from reviews.constants import TEXT_LEN
+from reviews.constants import TEXT_LEN, USER_ROLES
 
 
 class User(AbstractUser):
     bio = models.TextField()
-    role = models.CharField(choices=settings.USER_ROLES, max_length=64)
+    role = models.CharField(choices=USER_ROLES, max_length=64)
     confirmation_code = models.CharField(max_length=20, blank=True, null=True)
 
 
@@ -26,16 +25,21 @@ class Title(models.Model):
     name = models.CharField(max_length=256)
     year = models.IntegerField()
     description = models.TextField()
-    genre = models.ForeignKey(Genre, on_delete=models.CASCADE)
-    category = models.ForeignKey(Category, on_delete=models.CASCADE)
+    genre = models.ForeignKey(Genre, null=True, on_delete=models.SET_NULL)
+    category = models.ForeignKey(
+        Category, null=True, on_delete=models.SET_NULL)
 
 
 class Review(models.Model):
-    title = models.ForeignKey(Title, on_delete=models.CASCADE, verbose_name="Название произведения")
+    title = models.ForeignKey(Title, on_delete=models.CASCADE,
+                              verbose_name="Название произведения")
     text = models.TextField(verbose_name="Текст отзыва")
-    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
-    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)], verbose_name="Оценка")
-    pub_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               verbose_name="Автор")
+    score = models.PositiveIntegerField(validators=[MaxValueValidator(10)],
+                                        verbose_name="Оценка")
+    pub_date = models.DateTimeField(auto_now_add=True,
+                                    verbose_name="Дата публикации")
 
     class Meta:
         ordering = ["-pub_date"]
@@ -57,8 +61,10 @@ class Comment(models.Model):
     review = models.ForeignKey(Review, on_delete=models.CASCADE,
                                related_name="comments", verbose_name="Отзыв")
     text = models.TextField(verbose_name="Текст комментария")
-    author = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Автор")
-    pub_date = models.DateTimeField(auto_now_add=True, verbose_name="Дата публикации")
+    author = models.ForeignKey(User, on_delete=models.CASCADE,
+                               verbose_name="Автор")
+    pub_date = models.DateTimeField(auto_now_add=True,
+                                    verbose_name="Дата публикации")
 
     class Meta:
         ordering = ["-pub_date"]
