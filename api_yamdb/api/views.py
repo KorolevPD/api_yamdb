@@ -69,7 +69,6 @@ class UserSignupTokenViewSet(GenericViewSet):
     @action(detail=False, methods=['post'], url_path='signup')
     def signup(self, request):
         """Регистрация пользователя."""
-        # Создаем экземпляр сериализатора с данными из запроса
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save(is_active=False)
