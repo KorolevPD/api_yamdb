@@ -29,15 +29,31 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
     pagination_class = PageNumberPagination
     lookup_field = 'username'
 
-    def get_object(self):
-        return self.request.user
 
-    def partial_update(self, request, *args, **kwargs):
-        user = self.get_object()
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,
+                      mixins.ListModelMixin, mixins.DestroyModelMixin):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = (IsAuthenticated, IsAdministrator)
+    lookup_field = 'slug'
+
+    def get_permissions(self):
+        if self.action == 'list':
+            return (AllowAny(),)
+        return super().get_permissions()
+
+
+class GenreViewSet(GenericViewSet, mixins.CreateModelMixin,
+                   mixins.ListModelMixin, mixins.DestroyModelMixin):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = (IsAuthenticated, IsAdministrator)
+    lookup_field = 'slug'
+
+    def get_permissions(self):
+        if self.action == 'list':
+            return (AllowAny(),)
+        return super().get_permissions()
 
 
 class UserSignupTokenViewSet(GenericViewSet):
