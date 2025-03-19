@@ -5,3 +5,8 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return (request.method in permissions.SAFE_METHODS
                 or obj.author == request.user)
+
+
+class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        return request.user == obj.author or request.user.is_superuser or getattr(request.user, 'role', None) in ['moderator', 'admin']

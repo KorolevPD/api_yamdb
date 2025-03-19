@@ -1,6 +1,7 @@
 from random import choices
 from string import digits
 
+from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
 from rest_framework.pagination import PageNumberPagination
@@ -14,7 +15,7 @@ from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
 from reviews.models import Review, User
-from permissions import IsOwnerOrReadOnly
+from permissions import IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin
 from .serializers import SignupSerializer, ReviewSerializer, UserSerializer
 
 
@@ -112,4 +113,14 @@ class ReviewViewSet(ModelViewSet):
         return self.get_title().reviews.all()
 
     def perform_create(self, serializer):
+        user = self.request.user
+        if Review.objects.filter(title=self.get_title(), author=user).exists():
+            raise ValidationError("Вы уже оставили отзыв на это произведение.")
         serializer.save(author=self.request.user, title=self.get_title())
+
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
+        return super().get_permissions()
+
+
