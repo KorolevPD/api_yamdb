@@ -19,7 +19,7 @@ from reviews.models import Review, User, Category, Genre
 from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
                          IsAdministrator)
 from .serializers import (CategorySerializer, SignupSerializer,
-                          ReviewSerializer, UserSerializer, GenreSerializer)
+                          ReviewSerializer, UserSerializer, GenreSerializer, CommentSerializer)
 
 
 class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
@@ -126,8 +126,13 @@ class ReviewViewSet(ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly,
                           IsOwnerOrReadOnly)
 
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update', 'destroy']:
+            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
+        return super().get_permissions()
+
     def get_title(self):
-        return get_object_or_404(Review, pk=self.kwargs['title_id'])
+        return get_object_or_404(Title, pk=self.kwargs['title_pk'])
 
     def get_queryset(self):
         return self.get_title().reviews.all()
@@ -136,9 +141,23 @@ class ReviewViewSet(ModelViewSet):
         user = self.request.user
         if Review.objects.filter(title=self.get_title(), author=user).exists():
             raise ValidationError("Вы уже оставили отзыв на это произведение.")
-        serializer.save(author=self.request.user, title=self.get_title())
+        serializer.save(author=user, title=self.get_title())
+
+
+class CommentViewSet(ModelViewSet):
+    serializer_class = CommentSerializer
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
             self.permission_classes = [IsAuthorOrModeratorOrAdmin]
         return super().get_permissions()
+
+    def get_review(self):
+        return get_object_or_404(Review, pk=self.kwargs['review_pk'])
+
+    def get_queryset(self):
+        return self.get_review().comments.all()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user, review=self.get_review())
