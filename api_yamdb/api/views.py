@@ -8,21 +8,24 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+                                        IsAuthenticatedOrReadOnly, )
 from rest_framework.viewsets import (ModelViewSet, GenericViewSet)
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
-from reviews.models import Review, User
-from permissions import IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin
-from .serializers import SignupSerializer, ReviewSerializer, UserSerializer
+from reviews.models import Review, User, Category, Genre
+from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
+                         IsAdministrator)
+from .serializers import (CategorySerializer, SignupSerializer,
+                          ReviewSerializer, UserSerializer, GenreSerializer)
 
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdministrator)
     pagination_class = PageNumberPagination
     lookup_field = 'username'
 
