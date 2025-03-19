@@ -1,6 +1,7 @@
-from random import choices
 from string import digits
+from random import choices
 
+from rest_framework import mixins
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
@@ -8,33 +9,52 @@ from rest_framework.pagination import PageNumberPagination
 from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+                                        IsAuthenticatedOrReadOnly, )
 from rest_framework.viewsets import (ModelViewSet, GenericViewSet)
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
-from reviews.models import Review, User, Title
-from permissions import IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin
-from .serializers import SignupSerializer, ReviewSerializer, UserSerializer, CommentSerializer
+from reviews.models import Review, User, Category, Genre
+from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
+                         IsAdministrator)
+from .serializers import (CategorySerializer, SignupSerializer,
+                          ReviewSerializer, UserSerializer, GenreSerializer, CommentSerializer)
 
 
-class UserViewSet(ModelViewSet):
+class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
+                  mixins.DestroyModelMixin):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdministrator)
     pagination_class = PageNumberPagination
     lookup_field = 'username'
 
-    def get_object(self):
-        return self.request.user
 
-    def partial_update(self, request, *args, **kwargs):
-        user = self.get_object()
-        serializer = self.get_serializer(user, data=request.data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        self.perform_update(serializer)
-        return Response(serializer.data)
+class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,
+                      mixins.ListModelMixin, mixins.DestroyModelMixin):
+    queryset = Category.objects.all()
+    serializer_class = CategorySerializer
+    permission_classes = (IsAuthenticated, IsAdministrator)
+    lookup_field = 'slug'
+
+    def get_permissions(self):
+        if self.action == 'list':
+            return (AllowAny(),)
+        return super().get_permissions()
+
+
+class GenreViewSet(GenericViewSet, mixins.CreateModelMixin,
+                   mixins.ListModelMixin, mixins.DestroyModelMixin):
+    queryset = Genre.objects.all()
+    serializer_class = GenreSerializer
+    permission_classes = (IsAuthenticated, IsAdministrator)
+    lookup_field = 'slug'
+
+    def get_permissions(self):
+        if self.action == 'list':
+            return (AllowAny(),)
+        return super().get_permissions()
 
 
 class UserSignupTokenViewSet(GenericViewSet):
@@ -124,8 +144,6 @@ class ReviewViewSet(ModelViewSet):
         serializer.save(author=user, title=self.get_title())
 
 
-
-
 class CommentViewSet(ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
@@ -143,4 +161,3 @@ class CommentViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
-

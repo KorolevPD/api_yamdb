@@ -1,14 +1,36 @@
+from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
 
-from reviews.models import Review, User, Comment
+from reviews.models import Review, User, Category, Genre
 
 
 class UserSerializer(serializers.ModelSerializer):
+    email = serializers.CharField(allow_blank=False)
 
     class Meta:
         model = User
         fields = ('username', 'email', 'first_name', 'last_name', 'bio',
                   'role')
+
+
+class CategorySerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField(
+        validators=[UniqueValidator(queryset=Category.objects.all())]
+    )
+
+    class Meta:
+        model = Category
+        fields = ('name', 'slug')
+
+
+class GenreSerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField(
+        validators=[UniqueValidator(queryset=Category.objects.all())]
+    )
+
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
 
 
 class SignupSerializer(serializers.ModelSerializer):
