@@ -22,6 +22,17 @@ class CategorySerializer(serializers.ModelSerializer):
         model = Category
         fields = ('name', 'slug')
 
+
+class GenreSerializer(serializers.ModelSerializer):
+    slug = serializers.SlugField(
+        validators=[UniqueValidator(queryset=Category.objects.all())]
+    )
+
+    class Meta:
+        model = Genre
+        fields = ('name', 'slug')
+
+
 class SignupSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
