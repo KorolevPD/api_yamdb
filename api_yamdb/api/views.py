@@ -141,5 +141,3 @@ class ReviewViewSet(ModelViewSet):
         if self.action in ['update', 'partial_update', 'destroy']:
             self.permission_classes = [IsAuthorOrModeratorOrAdmin]
         return super().get_permissions()
-
-
