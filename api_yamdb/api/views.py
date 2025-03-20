@@ -1,6 +1,7 @@
 from string import digits
 from random import choices
 
+from rest_framework import filters
 from rest_framework import mixins
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -15,10 +16,10 @@ from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 
-from reviews.models import Review, User, Category, Genre
+from reviews.models import Review, User, Category, Genre, Title
 from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
                          IsAdministrator)
-from .serializers import (CategorySerializer, SignupSerializer,
+from .serializers import (CategorySerializer, SignupSerializer, TitleSerializer,
                           ReviewSerializer, UserSerializer, GenreSerializer, CommentSerializer)
 
 
@@ -28,7 +29,23 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
     serializer_class = UserSerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
     pagination_class = PageNumberPagination
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('username',)
     lookup_field = 'username'
+
+    def update(self, request, *args, **kwargs):
+        handler = self.http_method_not_allowed
+        return handler(request, *args, **kwargs)
+
+
+class UserMeViewSet(GenericViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (IsAuthenticated,)
+
+    @action(detail=True, methods=['get'], url_path='me')
+    def get_me(self, request):
+        pass
 
 
 class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,
@@ -36,6 +53,8 @@ class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
     lookup_field = 'slug'
 
     def get_permissions(self):
@@ -49,12 +68,32 @@ class GenreViewSet(GenericViewSet, mixins.CreateModelMixin,
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('name',)
     lookup_field = 'slug'
 
     def get_permissions(self):
         if self.action == 'list':
             return (AllowAny(),)
         return super().get_permissions()
+
+
+class TitleViewSet(ModelViewSet):
+    queryset = Title.objects.all()
+    serializer_class = TitleSerializer
+    permission_classes = (IsAuthenticated, IsAdministrator)
+    lookup_field = 'id'
+
+    # TODO Нужно объединить дублирующийся код с CategoryViewSet и GenreViewSet
+    # в отдельный пермишен
+    def get_permissions(self):
+        if self.action in ('retrieve', 'list'):
+            return (AllowAny(),)
+        return super().get_permissions()
+
+    def update(self, request, *args, **kwargs):
+        handler = self.http_method_not_allowed
+        return handler(request, *args, **kwargs)
 
 
 class UserSignupTokenViewSet(GenericViewSet):
