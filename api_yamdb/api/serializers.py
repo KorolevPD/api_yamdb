@@ -1,11 +1,14 @@
 from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
 
-from reviews.models import Review, User, Category, Genre, Comment
+from reviews.models import Review, User, Category, Genre, Comment, Title
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.CharField(allow_blank=False)
+    email = serializers.CharField(
+        allow_blank=False,
+        validators=[UniqueValidator(queryset=User.objects.all())]
+    )
 
     class Meta:
         model = User
@@ -33,7 +36,34 @@ class GenreSerializer(serializers.ModelSerializer):
         fields = ('name', 'slug')
 
 
-class SignupSerializer(serializers.ModelSerializer):
+class TitleSerializer(serializers.ModelSerializer):
+
+    # TODO Добавить поле rating, которое высчитывается на основе отзывов
+    genre = serializers.SlugRelatedField(
+        queryset=Genre.objects.all(), many=True, slug_field='slug', required=True
+    )
+    category = serializers.SlugRelatedField(
+        queryset=Category.objects.all(), slug_field='slug', required=True
+    )
+
+    class Meta:
+        model = Title
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+
+    def to_representation(self, instance):
+        representation = super().to_representation(instance)
+
+        # Заменяем поле `category` на объект с полями `name` и `slug`
+        category = representation.get('category')
+        if category:
+            category_instance = Category.objects.get(slug=category)
+            representation['category'] = CategorySerializer(
+                category_instance).data
+
+        return representation
+
+class SignupSerializer(UserSerializer):
+
     class Meta:
         model = User
         fields = ('username', 'email', )
