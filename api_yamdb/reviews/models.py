@@ -13,25 +13,26 @@ class User(AbstractUser):
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
 
 
 class Genre(models.Model):
     name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50)
+    slug = models.SlugField(max_length=50, unique=True)
 
 
 class Title(models.Model):
     name = models.CharField(max_length=256)
     year = models.IntegerField()
-    description = models.TextField()
-    genre = models.ForeignKey(Genre, null=True, on_delete=models.SET_NULL)
+    description = models.TextField(null=True)
+    genre = models.ManyToManyField(Genre)
     category = models.ForeignKey(
         Category, null=True, on_delete=models.SET_NULL)
 
 
 class Review(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
+                              related_name="titles",
                               verbose_name='Название произведения')
     text = models.TextField(verbose_name='Текст отзыва')
     author = models.ForeignKey(User, on_delete=models.CASCADE,
