@@ -28,7 +28,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class GenreSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
-        validators=[UniqueValidator(queryset=Category.objects.all())]
+        validators=[UniqueValidator(queryset=Genre.objects.all())]
     )
 
     class Meta:
