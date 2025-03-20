@@ -182,7 +182,12 @@ class ReviewViewSet(ModelViewSet):
         serializer.save(author=user, title=self.get_title())
 
 
-class CommentViewSet(ModelViewSet):
+class CommentViewSet(mixins.CreateModelMixin,
+                     mixins.ListModelMixin,
+                     mixins.RetrieveModelMixin,
+                     mixins.UpdateModelMixin,
+                     mixins.DestroyModelMixin,
+                     GenericViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
 
@@ -199,3 +204,9 @@ class CommentViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
+
+    def update(self, request, *args, **kwargs):
+        if request.method == "PUT":
+            return Response({"detail": "Метод PUT не разрешён."},
+                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().update(request, *args, **kwargs)
