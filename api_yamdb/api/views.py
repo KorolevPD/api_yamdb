@@ -1,8 +1,10 @@
+
 from string import digits
 from random import choices
 
 from rest_framework import filters
 from rest_framework import mixins
+from rest_framework.views import APIView
 from rest_framework.exceptions import ValidationError
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework.response import Response
@@ -19,7 +21,7 @@ from django.shortcuts import get_object_or_404
 from reviews.models import Review, User, Category, Genre, Title
 from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
                          IsAdministrator)
-from .serializers import (CategorySerializer, SignupSerializer, TitleSerializer,
+from .serializers import (CategorySerializer, SignupSerializer, TitleSerializer, UserMeSerializer,
                           ReviewSerializer, UserSerializer, GenreSerializer, CommentSerializer)
 
 
@@ -41,18 +43,20 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
         return super().update(request, *args, **kwargs)
 
 
-class UserMeViewSet(GenericViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+class UserMeViewSet(APIView):
     permission_classes = (IsAuthenticated,)
 
-    @action(detail=True, methods=['get'], url_path='me')
-    def get_me(self, request):
-        pass
+    def get(self, request):
+        serializer = UserSerializer(request.user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['patch'], url_path='me')
-    def patch_me(self, request):
-        pass
+    def patch(self, request):
+        serializer = UserMeSerializer(
+            request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,

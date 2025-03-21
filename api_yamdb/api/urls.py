@@ -17,5 +17,6 @@ router.register(
     'comments')
 
 urlpatterns = [
+    path('v1/users/me/', views.UserMeViewSet.as_view()),
     path('v1/', include(router.urls)),
 ]
