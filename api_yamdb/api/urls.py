@@ -15,5 +15,6 @@ router.register(r'titles/(?P<title_pk>\d+)/reviews', views.ReviewViewSet,
 router.register(r'titles/(?P<title_pk>\d+)/reviews/(?P<review_pk>\d+)/comments', views.CommentViewSet, 'comments')
 
 urlpatterns = [
+    path('v1/users/me/', views.UserMeViewSet.as_view()),
     path('v1/', include(router.urls)),
 ]

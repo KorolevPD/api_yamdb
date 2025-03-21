@@ -16,6 +16,12 @@ class UserSerializer(serializers.ModelSerializer):
                   'role')
 
 
+class UserMeSerializer(UserSerializer):
+
+    class Meta(UserSerializer.Meta):
+        read_only_fields = ('role',)
+
+
 class CategorySerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
         validators=[UniqueValidator(queryset=Category.objects.all())]
