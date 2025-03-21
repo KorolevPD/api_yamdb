@@ -30,12 +30,15 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
     permission_classes = (IsAuthenticated, IsAdministrator)
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
+    http_method_names = ["get", "post", "patch", "delete"]
     search_fields = ('username',)
     lookup_field = 'username'
 
     def update(self, request, *args, **kwargs):
-        handler = self.http_method_not_allowed
-        return handler(request, *args, **kwargs)
+        if not (request.user.is_superuser or request.user.role == 'admin'):
+            handler = self.http_method_not_allowed
+            return handler(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
 
 
 class UserMeViewSet(GenericViewSet):
@@ -45,6 +48,10 @@ class UserMeViewSet(GenericViewSet):
 
     @action(detail=True, methods=['get'], url_path='me')
     def get_me(self, request):
+        pass
+
+    @action(detail=True, methods=['patch'], url_path='me')
+    def patch_me(self, request):
         pass
 
 
