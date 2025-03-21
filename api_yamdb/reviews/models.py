@@ -29,6 +29,10 @@ class Title(models.Model):
     category = models.ForeignKey(
         Category, null=True, on_delete=models.SET_NULL)
 
+    @property
+    def rating(self):
+        return self.reviews.aggregate(models.Avg('score'))['score__avg'] or 0
+
 
 class Review(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
