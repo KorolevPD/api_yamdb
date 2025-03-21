@@ -188,6 +188,12 @@ class ReviewViewSet(ModelViewSet):
             raise ValidationError("Вы уже оставили отзыв на это произведение.")
         serializer.save(author=user, title=self.get_title())
 
+    def update(self, request, *args, **kwargs):
+        if request.method == "PUT":
+            return Response({"detail": "Метод PUT не разрешён."},
+                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
+        return super().update(request, *args, **kwargs)
+
 
 class CommentViewSet(mixins.CreateModelMixin,
                      mixins.ListModelMixin,
