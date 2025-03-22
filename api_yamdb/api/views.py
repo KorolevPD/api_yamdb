@@ -93,7 +93,7 @@ class GenreViewSet(GenericViewSet, mixins.CreateModelMixin,
 class TitleViewSet(ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    permission_classes = (IsAuthenticated,)
+    permission_classes = (IsAuthenticated, IsAdministrator)
     filter_backends = (DjangoFilterBackend,)
     filterset_class = TitleFilter
     lookup_field = 'id'
@@ -104,7 +104,7 @@ class TitleViewSet(ModelViewSet):
         return super().get_permissions()
 
     def update(self, request, *args, **kwargs):
-        if not (request.user.is_superuser or request.user.role == 'admin'):
+        if request.method == "PUT" or not (request.user.is_superuser or request.user.role == 'admin'):
             handler = self.http_method_not_allowed
             return handler(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
