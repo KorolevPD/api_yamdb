@@ -10,15 +10,27 @@ class User(AbstractUser):
     role = models.CharField(choices=USER_ROLES, max_length=64, default='user')
     confirmation_code = models.CharField(max_length=20, blank=True, null=True)
 
+    class Meta:
+        verbose_name = 'Пользователь'
+        verbose_name_plural = 'Пользователи'
+
 
 class Category(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(max_length=50, unique=True)
 
+    class Meta:
+        verbose_name = 'Категория'
+        verbose_name_plural = 'Категории'
+
 
 class Genre(models.Model):
     name = models.CharField(max_length=256)
     slug = models.SlugField(max_length=50, unique=True)
+
+    class Meta:
+        verbose_name = 'Жанр'
+        verbose_name_plural = 'Жанры'
 
 
 class Title(models.Model):
@@ -28,6 +40,10 @@ class Title(models.Model):
     genre = models.ManyToManyField(Genre)
     category = models.ForeignKey(
         Category, null=True, on_delete=models.SET_NULL)
+
+    class Meta:
+        verbose_name = 'Призведение'
+        verbose_name_plural = 'Произведения'
 
     @property
     def rating(self):
