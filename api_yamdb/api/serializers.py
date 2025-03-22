@@ -26,6 +26,7 @@ class UserMeSerializer(UserSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
+        max_length=50,
         validators=[UniqueValidator(queryset=Category.objects.all())]
     )
 
@@ -36,6 +37,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class GenreSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
+        max_length=50,
         validators=[UniqueValidator(queryset=Genre.objects.all())]
     )
 
