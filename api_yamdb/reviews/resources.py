@@ -1,6 +1,8 @@
 from datetime import datetime
-from import_export import resources, fields
-from import_export.widgets import Widget, ForeignKeyWidget
+
+from import_export import fields, resources
+from import_export.widgets import ForeignKeyWidget, Widget
+
 from .models import Category, Comment, Genre, Review, Title, User
 
 
