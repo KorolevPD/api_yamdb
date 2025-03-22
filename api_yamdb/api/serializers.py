@@ -5,7 +5,7 @@ from reviews.models import Review, User, Category, Genre, Comment, Title
 
 
 class UserSerializer(serializers.ModelSerializer):
-    email = serializers.CharField(
+    email = serializers.EmailField(
         required=True,
         allow_blank=False,
         max_length=254,
