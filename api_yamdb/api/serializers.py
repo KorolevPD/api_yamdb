@@ -46,12 +46,11 @@ class GenreSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
 
-    # TODO Добавить поле rating, которое высчитывается на основе отзывов
     genre = serializers.SlugRelatedField(
-        queryset=Genre.objects.all(), many=True, slug_field='slug', required=True
+        many=True, queryset=Genre.objects.all(), slug_field='slug'
     )
     category = serializers.SlugRelatedField(
-        queryset=Category.objects.all(), slug_field='slug', required=True
+        queryset=Category.objects.all(), slug_field='slug'
     )
 
     class Meta:
@@ -60,15 +59,11 @@ class TitleSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
-
-        # Заменяем поле `category` на объект с полями `name` и `slug`
-        category = representation.get('category')
-        if category:
-            category_instance = Category.objects.get(slug=category)
-            representation['category'] = CategorySerializer(
-                category_instance).data
-
+        representation['genre'] = GenreSerializer(
+            instance.genre, many=True).data
+        representation['category'] = CategorySerializer(instance.category).data
         return representation
+
 
 class SignupSerializer(UserSerializer):
 

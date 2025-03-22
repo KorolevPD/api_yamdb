@@ -31,7 +31,7 @@ class Title(models.Model):
 
     @property
     def rating(self):
-        return self.reviews.aggregate(models.Avg('score'))['score__avg'] or 0
+        return self.reviews.aggregate(models.Avg('score'))['score__avg'] or None
 
 
 class Review(models.Model):
