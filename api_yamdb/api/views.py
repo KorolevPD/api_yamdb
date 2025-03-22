@@ -1,7 +1,7 @@
-
 from string import digits
 from random import choices
 
+from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
 from rest_framework import mixins
 from rest_framework.views import APIView
@@ -23,6 +23,7 @@ from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
                          IsAdministrator)
 from .serializers import (CategorySerializer, SignupSerializer, TitleSerializer, UserMeSerializer,
                           ReviewSerializer, UserSerializer, GenreSerializer, CommentSerializer)
+from .filters import TitleFilter
 
 
 class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
@@ -92,19 +93,21 @@ class GenreViewSet(GenericViewSet, mixins.CreateModelMixin,
 class TitleViewSet(ModelViewSet):
     queryset = Title.objects.all()
     serializer_class = TitleSerializer
-    permission_classes = (IsAuthenticated, IsAdministrator)
+    permission_classes = (IsAuthenticated,)
+    filter_backends = (DjangoFilterBackend,)
+    filterset_class = TitleFilter
     lookup_field = 'id'
 
-    # TODO Нужно объединить дублирующийся код с CategoryViewSet и GenreViewSet
-    # в отдельный пермишен
     def get_permissions(self):
         if self.action in ('retrieve', 'list'):
             return (AllowAny(),)
         return super().get_permissions()
 
     def update(self, request, *args, **kwargs):
-        handler = self.http_method_not_allowed
-        return handler(request, *args, **kwargs)
+        if not (request.user.is_superuser or request.user.role == 'admin'):
+            handler = self.http_method_not_allowed
+            return handler(request, *args, **kwargs)
+        return super().update(request, *args, **kwargs)
 
 
 class UserSignupTokenViewSet(GenericViewSet):
