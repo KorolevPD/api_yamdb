@@ -118,26 +118,46 @@ class UserSignupTokenViewSet(GenericViewSet):
 
     @action(detail=False, methods=['post'], url_path='signup')
     def signup(self, request):
-        """Регистрация пользователя."""
-        serializer = self.get_serializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save(is_active=False)
-            confirmation_code = self.generate_confirmation_code()
-            user.confirmation_code = confirmation_code
-            user.save()
+        """Регистрация пользователя или повторная отправка кода."""
+        data = request.data.copy()
+        username = data.get('username')
+        email = data.get('email')
+        if username == "me":
+            return Response("Не возможно создать никнэйм me",
+                            status=status.HTTP_400_BAD_REQUEST)
 
-            send_mail(
-                'Подтверждение регистрации',
-                f'Ваш код подтверждения: {confirmation_code}',
-                settings.DEFAULT_FROM_EMAIL,
-                [user.email],
-                fail_silently=False,
-            )
-            return Response(
-                {'message': 'Письмо с кодом подтверждения отправлено.'},
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(username=username, email=email).first()
+        if user:
+        # Если пользователь найден, обновляем is_active
+            user.is_active = False
+        else:
+            serializer = self.get_serializer(data=data)
+            if not serializer.is_valid():
+                return Response(
+                    serializer.errors,
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+            user = serializer.save(is_active=False)
+        # Генерируем и сохраняем новый код подтверждения
+        confirmation_code = self.generate_confirmation_code()
+        user.confirmation_code = confirmation_code
+        user.save()
+
+        send_mail(
+            'Подтверждение регистрации',
+            f'Ваш код подтверждения: {confirmation_code}',
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
+
+        return Response(
+        {
+            'username': user.username,
+            'email': user.email,
+        },
+        status=status.HTTP_200_OK
+    )
 
     @action(detail=False, methods=['post'], url_path='token')
     def token(self, request):
@@ -154,7 +174,6 @@ class UserSignupTokenViewSet(GenericViewSet):
         if user.confirmation_code != confirmation_code:
             return Response({'error': 'Неверный код подтверждения'},
                             status=status.HTTP_400_BAD_REQUEST)
-        # Если код верный, активируем пользователя
         user.is_active = True
         user.confirmation_code = ''
         try:
@@ -162,7 +181,6 @@ class UserSignupTokenViewSet(GenericViewSet):
         except Exception as e:
             return Response({'error': str(e)},
                             status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-        # Генерируем JWT-токены
         refresh = RefreshToken.for_user(user)
         return Response({
             'access': str(refresh.access_token),
