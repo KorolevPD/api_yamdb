@@ -1,29 +1,28 @@
-from string import digits
 from random import choices
+from string import digits
 
-from django_filters.rest_framework import DjangoFilterBackend
-from rest_framework import filters
-from rest_framework import mixins
-from rest_framework.views import APIView
-from rest_framework.exceptions import ValidationError
-from rest_framework_simplejwt.tokens import RefreshToken
-from rest_framework.response import Response
-from rest_framework.pagination import PageNumberPagination
-from rest_framework.decorators import action
-from rest_framework import status
-from rest_framework.permissions import (AllowAny, IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly, )
-from rest_framework.viewsets import (ModelViewSet, GenericViewSet)
 from django.conf import settings
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
+from django_filters.rest_framework import DjangoFilterBackend
+from permissions import (IsAdministrator, IsAuthorOrModeratorOrAdmin,
+                         IsOwnerOrReadOnly)
+from rest_framework import filters, mixins, status
+from rest_framework.decorators import action
+from rest_framework.exceptions import ValidationError
+from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import (AllowAny, IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework_simplejwt.tokens import RefreshToken
 
-from reviews.models import Review, User, Category, Genre, Title
-from permissions import (IsOwnerOrReadOnly, IsAuthorOrModeratorOrAdmin,
-                         IsAdministrator)
-from .serializers import (CategorySerializer, SignupSerializer, TitleSerializer, UserMeSerializer,
-                          ReviewSerializer, UserSerializer, GenreSerializer, CommentSerializer)
+from reviews.models import Category, Genre, Review, Title, User
 from .filters import TitleFilter
+from .serializers import (CategorySerializer, CommentSerializer,
+                          GenreSerializer, ReviewSerializer, SignupSerializer,
+                          TitleSerializer, UserMeSerializer, UserSerializer)
 
 
 class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
@@ -33,7 +32,7 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
     permission_classes = (IsAuthenticated, IsAdministrator)
     pagination_class = PageNumberPagination
     filter_backends = (filters.SearchFilter,)
-    http_method_names = ["get", "post", "patch", "delete"]
+    http_method_names = ['get', 'post', 'patch', 'delete']
     search_fields = ('username',)
     lookup_field = 'username'
 
@@ -104,7 +103,8 @@ class TitleViewSet(ModelViewSet):
         return super().get_permissions()
 
     def update(self, request, *args, **kwargs):
-        if request.method == "PUT" or not (request.user.is_superuser or request.user.role == 'admin'):
+        if request.method == 'PUT' or not (request.user.is_superuser
+                                           or request.user.role == 'admin'):
             handler = self.http_method_not_allowed
             return handler(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
@@ -121,17 +121,17 @@ class UserSignupTokenViewSet(GenericViewSet):
 
     @action(detail=False, methods=['post'], url_path='signup')
     def signup(self, request):
-        """Регистрация пользователя или повторная отправка кода."""
+        '''Регистрация пользователя или повторная отправка кода.'''
         data = request.data.copy()
         username = data.get('username')
         email = data.get('email')
-        if username == "me":
-            return Response("Не возможно создать никнэйм me",
+        if username == 'me':
+            return Response('Не возможно создать никнэйм me',
                             status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.filter(username=username, email=email).first()
         if user:
-        # Если пользователь найден, обновляем is_active
+            # Если пользователь найден, обновляем is_active
             user.is_active = False
         else:
             serializer = self.get_serializer(data=data)
@@ -154,17 +154,12 @@ class UserSignupTokenViewSet(GenericViewSet):
             fail_silently=False,
         )
 
-        return Response(
-        {
-            'username': user.username,
-            'email': user.email,
-        },
-        status=status.HTTP_200_OK
-    )
+        return Response({'username': user.username, 'email': user.email},
+                        status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='token')
     def token(self, request):
-        """Получение токена."""
+        '''Получение токена.'''
         username = request.data.get('username')
         confirmation_code = request.data.get('confirmation_code')
         if not username or not confirmation_code:
@@ -210,12 +205,12 @@ class ReviewViewSet(ModelViewSet):
     def perform_create(self, serializer):
         user = self.request.user
         if Review.objects.filter(title=self.get_title(), author=user).exists():
-            raise ValidationError("Вы уже оставили отзыв на это произведение.")
+            raise ValidationError('Вы уже оставили отзыв на это произведение.')
         serializer.save(author=user, title=self.get_title())
 
     def update(self, request, *args, **kwargs):
-        if request.method == "PUT":
-            return Response({"detail": "Метод PUT не разрешён."},
+        if request.method == 'PUT':
+            return Response({'detail': 'Метод PUT не разрешён.'},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super().update(request, *args, **kwargs)
 
@@ -244,7 +239,7 @@ class CommentViewSet(mixins.CreateModelMixin,
         serializer.save(author=self.request.user, review=self.get_review())
 
     def update(self, request, *args, **kwargs):
-        if request.method == "PUT":
-            return Response({"detail": "Метод PUT не разрешён."},
+        if request.method == 'PUT':
+            return Response({'detail': 'Метод PUT не разрешён.'},
                             status=status.HTTP_405_METHOD_NOT_ALLOWED)
         return super().update(request, *args, **kwargs)

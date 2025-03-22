@@ -1,5 +1,5 @@
-from django.core.validators import MaxValueValidator
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import MaxValueValidator
 from django.db import models
 
 from reviews.constants import TEXT_LEN, USER_ROLES
@@ -47,7 +47,7 @@ class Title(models.Model):
 
     @property
     def rating(self):
-        return self.reviews.aggregate(models.Avg('score'))['score__avg'] or None
+        return self.reviews.aggregate(models.Avg('score'))['score__avg']
 
 
 class Review(models.Model):

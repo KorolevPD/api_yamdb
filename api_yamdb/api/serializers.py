@@ -1,7 +1,7 @@
-from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
+from rest_framework.validators import UniqueValidator
 
-from reviews.models import Review, User, Category, Genre, Comment, Title
+from reviews.models import Category, Comment, Genre, Review, Title, User
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -55,7 +55,8 @@ class TitleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Title
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'rating')
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category',
+                  'rating')
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
