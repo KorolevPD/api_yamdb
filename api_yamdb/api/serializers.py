@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from rest_framework.validators import UniqueValidator
 from rest_framework import serializers
 
@@ -44,17 +45,20 @@ class GenreSerializer(serializers.ModelSerializer):
 
 class TitleSerializer(serializers.ModelSerializer):
 
-    # TODO Добавить поле rating, которое высчитывается на основе отзывов
     genre = serializers.SlugRelatedField(
         queryset=Genre.objects.all(), many=True, slug_field='slug', required=True
     )
     category = serializers.SlugRelatedField(
         queryset=Category.objects.all(), slug_field='slug', required=True
     )
+    rating = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
         model = Title
         fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'rating')
+
+    def get_rating(self, obj):
+        return obj.reviews.aggregate(avg_score=Avg('score'))['avg_score']
 
     def to_representation(self, instance):
         representation = super().to_representation(instance)
@@ -67,6 +71,7 @@ class TitleSerializer(serializers.ModelSerializer):
                 category_instance).data
 
         return representation
+
 
 class SignupSerializer(UserSerializer):
 
