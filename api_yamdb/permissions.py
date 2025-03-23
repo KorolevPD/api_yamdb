@@ -10,9 +10,7 @@ class IsOwnerOrReadOnly(permissions.BasePermission):
 class IsAuthorOrModeratorOrAdmin(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
         return (request.user == obj.author
-                or request.user.is_superuser
-                or getattr(request.user, 'role', None)
-                in ('moderator', 'admin'))
+                or request.user.is_moderator())
 
 
 class IsAdministrator(permissions.BasePermission):

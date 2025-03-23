@@ -2,22 +2,33 @@ from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator
 from django.db import models
 
-from reviews.constants import TEXT_LEN, USER_ROLES
+from reviews.constants import (TEXT_LEN, USER_ROLES, DEFAULT_USER_ROLE,
+                               SLUG_MAX_LENGHT, NAME_MAX_LENGHT,
+                               get_roles_max_lenght)
 
 
 class User(AbstractUser):
     bio = models.TextField(blank=True)
-    role = models.CharField(choices=USER_ROLES, max_length=64, default='user')
+    role = models.CharField(
+        choices=USER_ROLES,
+        max_length=get_roles_max_lenght(),
+        default=DEFAULT_USER_ROLE)
     confirmation_code = models.CharField(max_length=20, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
+    def is_admin(self):
+        return self.is_superuser or self.role == 'admin'
+
+    def is_moderator(self):
+        return self.is_admin() or self.role == 'moderator'
+
 
 class Category(models.Model):
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=NAME_MAX_LENGHT)
+    slug = models.SlugField(max_length=SLUG_MAX_LENGHT, unique=True)
 
     class Meta:
         verbose_name = 'Категория'
@@ -25,8 +36,8 @@ class Category(models.Model):
 
 
 class Genre(models.Model):
-    name = models.CharField(max_length=256)
-    slug = models.SlugField(max_length=50, unique=True)
+    name = models.CharField(max_length=NAME_MAX_LENGHT)
+    slug = models.SlugField(max_length=SLUG_MAX_LENGHT, unique=True)
 
     class Meta:
         verbose_name = 'Жанр'
@@ -34,8 +45,8 @@ class Genre(models.Model):
 
 
 class Title(models.Model):
-    name = models.CharField(max_length=256)
-    year = models.IntegerField()
+    name = models.CharField(max_length=NAME_MAX_LENGHT)
+    year = models.SmallIntegerField()
     description = models.TextField(null=True)
     genre = models.ManyToManyField(Genre)
     category = models.ForeignKey(

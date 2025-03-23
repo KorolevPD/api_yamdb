@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
 
+from reviews.constants import EMAIL_MAX_LENGHT
 from reviews.models import Category, Comment, Genre, Review, Title, User
 
 
@@ -8,7 +9,7 @@ class UserSerializer(serializers.ModelSerializer):
     email = serializers.EmailField(
         required=True,
         allow_blank=False,
-        max_length=254,
+        max_length=EMAIL_MAX_LENGHT,
         validators=[UniqueValidator(queryset=User.objects.all())]
     )
 
@@ -49,10 +50,12 @@ class GenreSerializer(serializers.ModelSerializer):
 class TitleSerializer(serializers.ModelSerializer):
 
     genre = serializers.SlugRelatedField(
-        many=True, queryset=Genre.objects.all(), slug_field='slug'
+        many=True, queryset=Genre.objects.all(),
+        slug_field='slug',
+        allow_empty=False
     )
     category = serializers.SlugRelatedField(
-        queryset=Category.objects.all(), slug_field='slug'
+        queryset=Category.objects.all(), slug_field='slug', allow_empty=False
     )
 
     class Meta:
