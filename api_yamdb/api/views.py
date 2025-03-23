@@ -25,6 +25,11 @@ from .serializers import (CategorySerializer, CommentSerializer,
                           TitleSerializer, UserMeSerializer, UserSerializer)
 
 
+class CreateListDestroyView(GenericViewSet, mixins.CreateModelMixin,
+                            mixins.ListModelMixin, mixins.DestroyModelMixin):
+    pass
+
+
 class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
                   mixins.DestroyModelMixin):
     queryset = User.objects.all()
@@ -37,7 +42,7 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
     lookup_field = 'username'
 
     def update(self, request, *args, **kwargs):
-        if not (request.user.is_superuser or request.user.role == 'admin'):
+        if not request.user.is_admin():
             handler = self.http_method_not_allowed
             return handler(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
@@ -59,8 +64,7 @@ class UserMeViewSet(APIView):
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
-class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,
-                      mixins.ListModelMixin, mixins.DestroyModelMixin):
+class CategoryViewSet(CreateListDestroyView):
     queryset = Category.objects.all()
     serializer_class = CategorySerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
@@ -74,8 +78,7 @@ class CategoryViewSet(GenericViewSet, mixins.CreateModelMixin,
         return super().get_permissions()
 
 
-class GenreViewSet(GenericViewSet, mixins.CreateModelMixin,
-                   mixins.ListModelMixin, mixins.DestroyModelMixin):
+class GenreViewSet(CreateListDestroyView):
     queryset = Genre.objects.all()
     serializer_class = GenreSerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
@@ -103,8 +106,7 @@ class TitleViewSet(ModelViewSet):
         return super().get_permissions()
 
     def update(self, request, *args, **kwargs):
-        if request.method == 'PUT' or not (request.user.is_superuser
-                                           or request.user.role == 'admin'):
+        if request.method == 'PUT' or not request.user.is_admin():
             handler = self.http_method_not_allowed
             return handler(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
@@ -193,7 +195,8 @@ class ReviewViewSet(ModelViewSet):
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
+            self.permission_classes = (IsAuthenticated,
+                                       IsAuthorOrModeratorOrAdmin)
         return super().get_permissions()
 
     def get_title(self):
@@ -226,7 +229,8 @@ class CommentViewSet(mixins.CreateModelMixin,
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
-            self.permission_classes = [IsAuthorOrModeratorOrAdmin]
+            self.permission_classes = [IsAuthenticated,
+                                       IsAuthorOrModeratorOrAdmin]
         return super().get_permissions()
 
     def get_review(self):
