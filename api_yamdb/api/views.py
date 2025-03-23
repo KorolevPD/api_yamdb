@@ -3,6 +3,7 @@ from string import digits
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from permissions import (IsAdministrator, IsAuthorOrModeratorOrAdmin,
@@ -93,7 +94,7 @@ class GenreViewSet(CreateListDestroyView):
 
 
 class TitleViewSet(ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
     serializer_class = TitleSerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
     filter_backends = (DjangoFilterBackend,)
@@ -192,6 +193,7 @@ class ReviewViewSet(ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,
                           IsOwnerOrReadOnly)
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -211,21 +213,11 @@ class ReviewViewSet(ModelViewSet):
             raise ValidationError('Вы уже оставили отзыв на это произведение.')
         serializer.save(author=user, title=self.get_title())
 
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            return Response({'detail': 'Метод PUT не разрешён.'},
-                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super().update(request, *args, **kwargs)
 
-
-class CommentViewSet(mixins.CreateModelMixin,
-                     mixins.ListModelMixin,
-                     mixins.RetrieveModelMixin,
-                     mixins.UpdateModelMixin,
-                     mixins.DestroyModelMixin,
-                     GenericViewSet):
+class CommentViewSet(ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -241,9 +233,3 @@ class CommentViewSet(mixins.CreateModelMixin,
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
-
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            return Response({'detail': 'Метод PUT не разрешён.'},
-                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super().update(request, *args, **kwargs)

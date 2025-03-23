@@ -56,10 +56,6 @@ class Title(models.Model):
         verbose_name = 'Призведение'
         verbose_name_plural = 'Произведения'
 
-    @property
-    def rating(self):
-        return self.reviews.aggregate(models.Avg('score'))['score__avg']
-
 
 class Review(models.Model):
     title = models.ForeignKey(Title, on_delete=models.CASCADE,
