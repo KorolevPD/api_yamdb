@@ -1,8 +1,4 @@
-from random import choices
-from string import digits
-
-from django.conf import settings
-from django.core.mail import send_mail
+from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from permissions import (IsAdministrator, IsAuthorOrModeratorOrAdmin,
@@ -17,8 +13,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-
 from reviews.models import Category, Genre, Review, Title, User
+
 from .filters import TitleFilter
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer, SignupSerializer,
@@ -93,7 +89,7 @@ class GenreViewSet(CreateListDestroyView):
 
 
 class TitleViewSet(ModelViewSet):
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().annotate(rating=Avg('reviews__score'))
     serializer_class = TitleSerializer
     permission_classes = (IsAuthenticated, IsAdministrator)
     filter_backends = (DjangoFilterBackend,)
@@ -117,47 +113,17 @@ class UserSignupTokenViewSet(GenericViewSet):
     serializer_class = SignupSerializer
     permission_classes = (AllowAny,)
 
-    def generate_confirmation_code(self, length=6):
-        # Генерирует случайный числовой код длиной 6 символов.
-        return ''.join(choices(digits, k=length))
-
     @action(detail=False, methods=['post'], url_path='signup')
     def signup(self, request):
         '''Регистрация пользователя или повторная отправка кода.'''
-        data = request.data.copy()
-        username = data.get('username')
-        email = data.get('email')
-        if username == 'me':
-            return Response('Не возможно создать никнэйм me',
-                            status=status.HTTP_400_BAD_REQUEST)
+        serializer = self.get_serializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+            return Response({'username': user.username, 'email': user.email},
+                            status=status.HTTP_200_OK)
 
-        user = User.objects.filter(username=username, email=email).first()
-        if user:
-            # Если пользователь найден, обновляем is_active
-            user.is_active = False
-        else:
-            serializer = self.get_serializer(data=data)
-            if not serializer.is_valid():
-                return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            user = serializer.save(is_active=False)
-        # Генерируем и сохраняем новый код подтверждения
-        confirmation_code = self.generate_confirmation_code()
-        user.confirmation_code = confirmation_code
-        user.save()
-
-        send_mail(
-            'Подтверждение регистрации',
-            f'Ваш код подтверждения: {confirmation_code}',
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
-
-        return Response({'username': user.username, 'email': user.email},
-                        status=status.HTTP_200_OK)
+        return Response(serializer.errors,
+                        status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['post'], url_path='token')
     def token(self, request):
@@ -192,6 +158,7 @@ class ReviewViewSet(ModelViewSet):
     serializer_class = ReviewSerializer
     permission_classes = (IsAuthenticatedOrReadOnly,
                           IsOwnerOrReadOnly)
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -211,21 +178,11 @@ class ReviewViewSet(ModelViewSet):
             raise ValidationError('Вы уже оставили отзыв на это произведение.')
         serializer.save(author=user, title=self.get_title())
 
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            return Response({'detail': 'Метод PUT не разрешён.'},
-                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super().update(request, *args, **kwargs)
 
-
-class CommentViewSet(mixins.CreateModelMixin,
-                     mixins.ListModelMixin,
-                     mixins.RetrieveModelMixin,
-                     mixins.UpdateModelMixin,
-                     mixins.DestroyModelMixin,
-                     GenericViewSet):
+class CommentViewSet(ModelViewSet):
     serializer_class = CommentSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]
+    http_method_names = ['get', 'post', 'patch', 'delete']
 
     def get_permissions(self):
         if self.action in ['update', 'partial_update', 'destroy']:
@@ -241,9 +198,3 @@ class CommentViewSet(mixins.CreateModelMixin,
 
     def perform_create(self, serializer):
         serializer.save(author=self.request.user, review=self.get_review())
-
-    def update(self, request, *args, **kwargs):
-        if request.method == 'PUT':
-            return Response({'detail': 'Метод PUT не разрешён.'},
-                            status=status.HTTP_405_METHOD_NOT_ALLOWED)
-        return super().update(request, *args, **kwargs)

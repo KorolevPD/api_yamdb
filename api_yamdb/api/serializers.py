@@ -1,5 +1,10 @@
+from django.core.mail import send_mail
+from django.conf import settings
+from random import choices
+from string import digits
 from rest_framework import serializers
 from rest_framework.validators import UniqueValidator
+from rest_framework.exceptions import ValidationError
 
 from reviews.constants import EMAIL_MAX_LENGHT
 from reviews.models import Category, Comment, Genre, Review, Title, User
@@ -48,7 +53,7 @@ class GenreSerializer(serializers.ModelSerializer):
 
 
 class TitleSerializer(serializers.ModelSerializer):
-
+    rating = serializers.FloatField(read_only=True)
     genre = serializers.SlugRelatedField(
         many=True, queryset=Genre.objects.all(),
         slug_field='slug',
@@ -71,17 +76,84 @@ class TitleSerializer(serializers.ModelSerializer):
         return representation
 
 
-class SignupSerializer(UserSerializer):
+class SignupSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        max_length=User._meta.get_field('username').max_length
+    )
+    email = serializers.EmailField(
+        required=True,
+        allow_blank=False,
+        max_length=EMAIL_MAX_LENGHT
+    )
+    confirmation_code_length = 6
 
     class Meta:
         model = User
-        fields = ('username', 'email', )
+        fields = ('username', 'email')
         extra_kwargs = {
             'password': {'write_only': True},
         }
 
+    def validate_email(self, value):
+        if not value:
+            raise ValidationError('Email обязателен')
+        return value
+
+    def validate_username(self, value):
+        if not value:
+            raise ValidationError('Невозможно создать пустое имя пользователя')
+        if value.lower() == 'me':
+            raise ValidationError('Невозможно создать никнейм "me"')
+        return value
+
+    def validate(self, data):
+        email = data.get('email')
+        username = data.get('username')
+
+        # Проверяем, существует ли пользователь с таким email
+        user_by_email = User.objects.filter(email=email).first()
+        if user_by_email:
+            if user_by_email.username != username:
+                raise serializers.ValidationError(
+                    {'email': 'Этот email уже используется с другим username'}
+                )
+
+        # Проверяем, существует ли пользователь с таким username
+        user_by_username = User.objects.filter(username=username).first()
+        if user_by_username:
+            if user_by_username.email != email:
+                raise serializers.ValidationError(
+                    {'username': 'Этот username уже занят другим email'}
+                )
+
+        return data
+
+    def generate_confirmation_code(self):
+        return ''.join(choices(digits, k=self.confirmation_code_length))
+
     def create(self, validated_data):
-        user = User.objects.create_user(**validated_data)
+        user, created = User.objects.get_or_create(
+            username=validated_data['username'],
+            email=validated_data['email'],
+            defaults={'is_active': True})
+
+        if not created:
+            user.is_active = False
+
+        confirmation_code = self.generate_confirmation_code()
+        user.confirmation_code = confirmation_code
+        user.save()
+
+        # Отправка email с кодом подтверждения
+        send_mail(
+            'Подтверждение регистрации',
+            f'Ваш код подтверждения: {confirmation_code}',
+            settings.DEFAULT_FROM_EMAIL,
+            [user.email],
+            fail_silently=False,
+        )
         return user
 
 
