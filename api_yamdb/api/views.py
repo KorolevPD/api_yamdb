@@ -1,11 +1,6 @@
-from random import choices
-from string import digits
-
-from django.conf import settings
-from django.core.mail import send_mail
-from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework.exceptions import ValidationError
 from permissions import (IsAdministrator, IsAuthorOrModeratorOrAdmin,
                          IsOwnerOrReadOnly)
 from rest_framework import filters, mixins, status
@@ -118,45 +113,15 @@ class UserSignupTokenViewSet(GenericViewSet):
     serializer_class = SignupSerializer
     permission_classes = (AllowAny,)
 
-    def generate_confirmation_code(self, length=6):
-        # Генерирует случайный числовой код длиной 6 символов.
-        return ''.join(choices(digits, k=length))
-
     @action(detail=False, methods=['post'], url_path='signup')
     def signup(self, request):
         '''Регистрация пользователя или повторная отправка кода.'''
-        data = request.data.copy()
-        username = data.get('username')
-        email = data.get('email')
-        if username == 'me':
-            return Response('Не возможно создать никнэйм me',
+        serializer = self.get_serializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors,
                             status=status.HTTP_400_BAD_REQUEST)
 
-        user = User.objects.filter(username=username, email=email).first()
-        if user:
-            # Если пользователь найден, обновляем is_active
-            user.is_active = False
-        else:
-            serializer = self.get_serializer(data=data)
-            if not serializer.is_valid():
-                return Response(
-                    serializer.errors,
-                    status=status.HTTP_400_BAD_REQUEST
-                )
-            user = serializer.save(is_active=False)
-        # Генерируем и сохраняем новый код подтверждения
-        confirmation_code = self.generate_confirmation_code()
-        user.confirmation_code = confirmation_code
-        user.save()
-
-        send_mail(
-            'Подтверждение регистрации',
-            f'Ваш код подтверждения: {confirmation_code}',
-            settings.DEFAULT_FROM_EMAIL,
-            [user.email],
-            fail_silently=False,
-        )
-
+        user = serializer.save()
         return Response({'username': user.username, 'email': user.email},
                         status=status.HTTP_200_OK)
 
