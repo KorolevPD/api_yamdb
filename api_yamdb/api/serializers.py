@@ -74,11 +74,16 @@ class TitleSerializer(serializers.ModelSerializer):
         return representation
 
 
-class SignupSerializer(UserSerializer):
+class SignupSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(
+        required=True,
+        allow_blank=False,
+        max_length=User._meta.get_field('username').max_length
+    )
     email = serializers.EmailField(
         required=True,
         allow_blank=False,
-        max_length=EMAIL_MAX_LENGHT,
+        max_length=EMAIL_MAX_LENGHT
     )
     confirmation_code_length = 6
 
@@ -91,15 +96,37 @@ class SignupSerializer(UserSerializer):
 
     def validate_email(self, value):
         if not value:
-            raise ValidationError("Email обязателен")
+            raise ValidationError('Email обязателен')
         return value
 
     def validate_username(self, value):
         if not value:
-            raise ValidationError("Невозможно создать пустое имя пользователя")
-        if value.lower() == "me":
-            raise ValidationError("Невозможно создать никнейм 'me'")
+            raise ValidationError('Невозможно создать пустое имя пользователя')
+        if value.lower() == 'me':
+            raise ValidationError('Невозможно создать никнейм "me"')
         return value
+
+    def validate(self, data):
+        email = data.get('email')
+        username = data.get('username')
+
+        # Проверяем, существует ли пользователь с таким email
+        user_by_email = User.objects.filter(email=email).first()
+        if user_by_email:
+            if user_by_email.username != username:
+                raise serializers.ValidationError(
+                    {'email': 'Этот email уже используется с другим username'}
+                )
+
+        # Проверяем, существует ли пользователь с таким username
+        user_by_username = User.objects.filter(username=username).first()
+        if user_by_username:
+            if user_by_username.email != email:
+                raise serializers.ValidationError(
+                    {'username': 'Этот username уже занят другим email'}
+                )
+
+        return data
 
     def generate_confirmation_code(self):
         return ''.join(choices(digits, k=self.confirmation_code_length))
