@@ -1,10 +1,12 @@
-from django.core.mail import send_mail
-from django.conf import settings
 from random import choices
 from string import digits
+
+from django.conf import settings
+from django.core.mail import send_mail
+from django.core.validators import RegexValidator
 from rest_framework import serializers
-from rest_framework.validators import UniqueValidator
 from rest_framework.exceptions import ValidationError
+from rest_framework.validators import UniqueValidator
 
 from reviews.constants import EMAIL_MAX_LENGHT
 from reviews.models import Category, Comment, Genre, Review, Title, User
@@ -80,7 +82,14 @@ class SignupSerializer(serializers.ModelSerializer):
     username = serializers.CharField(
         required=True,
         allow_blank=False,
-        max_length=User._meta.get_field('username').max_length
+        max_length=User._meta.get_field('username').max_length,
+        validators=[
+            RegexValidator(
+                regex=r'^[\w.@+-]+\Z',
+                message="Имя пользователя может содержать только"
+                "буквы, цифры и символы .@+-_"
+            )
+        ]
     )
     email = serializers.EmailField(
         required=True,
