@@ -1,10 +1,13 @@
+from datetime import datetime
+
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator
 from django.db import models
 
-from reviews.constants import (TEXT_LEN, USER_ROLES, DEFAULT_USER_ROLE,
-                               SLUG_MAX_LENGHT, NAME_MAX_LENGHT,
-                               get_roles_max_lenght)
+from reviews.constants import (ADMIN_ROLE, CONFIRMATION_CODE_LENGTH,
+                               DEFAULT_USER_ROLE, MODERATOR_ROLE,
+                               NAME_MAX_LENGHT, SLUG_MAX_LENGHT, TEXT_LEN,
+                               USER_ROLES, get_roles_max_lenght)
 
 
 class User(AbstractUser):
@@ -13,17 +16,20 @@ class User(AbstractUser):
         choices=USER_ROLES,
         max_length=get_roles_max_lenght(),
         default=DEFAULT_USER_ROLE)
-    confirmation_code = models.CharField(max_length=20, blank=True, null=True)
+    confirmation_code = models.CharField(
+        max_length=CONFIRMATION_CODE_LENGTH, blank=True, null=True)
 
     class Meta:
         verbose_name = 'Пользователь'
         verbose_name_plural = 'Пользователи'
 
+    @property
     def is_admin(self):
-        return self.is_superuser or self.role == 'admin'
+        return self.is_superuser or self.role == ADMIN_ROLE
 
+    @property
     def is_moderator(self):
-        return self.is_admin() or self.role == 'moderator'
+        return self.is_admin() or self.role == MODERATOR_ROLE
 
 
 class Category(models.Model):
@@ -46,7 +52,8 @@ class Genre(models.Model):
 
 class Title(models.Model):
     name = models.CharField(max_length=NAME_MAX_LENGHT)
-    year = models.SmallIntegerField()
+    year = models.SmallIntegerField(
+        validators=[MaxValueValidator(datetime.now().year)])
     description = models.TextField(null=True)
     genre = models.ManyToManyField(Genre)
     category = models.ForeignKey(
