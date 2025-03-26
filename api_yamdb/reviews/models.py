@@ -29,7 +29,7 @@ class User(AbstractUser):
 
     @property
     def is_moderator(self):
-        return self.is_admin() or self.role == MODERATOR_ROLE
+        return self.is_admin or self.role == MODERATOR_ROLE
 
 
 class Category(models.Model):
