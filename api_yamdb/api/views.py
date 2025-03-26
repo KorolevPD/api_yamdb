@@ -38,7 +38,7 @@ class UserViewSet(ModelViewSet, mixins.UpdateModelMixin,
     lookup_field = 'username'
 
     def update(self, request, *args, **kwargs):
-        if not request.user.is_admin():
+        if not request.user.is_admin:
             handler = self.http_method_not_allowed
             return handler(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
@@ -102,7 +102,7 @@ class TitleViewSet(ModelViewSet):
         return super().get_permissions()
 
     def update(self, request, *args, **kwargs):
-        if request.method == 'PUT' or not request.user.is_admin():
+        if request.method == 'PUT' or not request.user.is_admin:
             handler = self.http_method_not_allowed
             return handler(request, *args, **kwargs)
         return super().update(request, *args, **kwargs)
@@ -115,7 +115,7 @@ class UserSignupTokenViewSet(GenericViewSet):
 
     @action(detail=False, methods=['post'], url_path='signup')
     def signup(self, request):
-        '''Регистрация пользователя или повторная отправка кода.'''
+        """Регистрация пользователя или повторная отправка кода."""
         serializer = self.get_serializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
@@ -127,7 +127,7 @@ class UserSignupTokenViewSet(GenericViewSet):
 
     @action(detail=False, methods=['post'], url_path='token')
     def token(self, request):
-        '''Получение токена.'''
+        """Получение токена."""
         username = request.data.get('username')
         confirmation_code = request.data.get('confirmation_code')
         if not username or not confirmation_code:
