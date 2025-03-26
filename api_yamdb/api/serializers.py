@@ -1,6 +1,3 @@
-from random import choices
-from string import digits
-
 from django.conf import settings
 from django.core.mail import send_mail
 from django.core.validators import RegexValidator
@@ -8,8 +5,10 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
-from reviews.constants import EMAIL_MAX_LENGHT
+from reviews.constants import (EMAIL_MAX_LENGHT,
+                               SLUG_MAX_LENGHT)
 from reviews.models import Category, Comment, Genre, Review, Title, User
+from .utils import generate_confirmation_code
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -34,7 +33,7 @@ class UserMeSerializer(UserSerializer):
 
 class CategorySerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
-        max_length=50,
+        max_length=SLUG_MAX_LENGHT,
         validators=[UniqueValidator(queryset=Category.objects.all())]
     )
 
@@ -45,7 +44,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
 class GenreSerializer(serializers.ModelSerializer):
     slug = serializers.SlugField(
-        max_length=50,
+        max_length=SLUG_MAX_LENGHT,
         validators=[UniqueValidator(queryset=Genre.objects.all())]
     )
 
@@ -96,7 +95,6 @@ class SignupSerializer(serializers.ModelSerializer):
         allow_blank=False,
         max_length=EMAIL_MAX_LENGHT
     )
-    confirmation_code_length = 6
 
     class Meta:
         model = User
@@ -139,9 +137,6 @@ class SignupSerializer(serializers.ModelSerializer):
 
         return data
 
-    def generate_confirmation_code(self):
-        return ''.join(choices(digits, k=self.confirmation_code_length))
-
     def create(self, validated_data):
         user, created = User.objects.get_or_create(
             username=validated_data['username'],
@@ -151,7 +146,7 @@ class SignupSerializer(serializers.ModelSerializer):
         if not created:
             user.is_active = False
 
-        confirmation_code = self.generate_confirmation_code()
+        confirmation_code = generate_confirmation_code()
         user.confirmation_code = confirmation_code
         user.save()
 
