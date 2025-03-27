@@ -1,11 +1,8 @@
 from django.db.models import Avg
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
-from permissions import (IsAdministrator, IsAuthorOrModeratorOrAdmin,
-                         IsOwnerOrReadOnly)
 from rest_framework import filters, mixins, status
 from rest_framework.decorators import action
-from rest_framework.exceptions import ValidationError
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.permissions import (AllowAny, IsAuthenticated,
                                         IsAuthenticatedOrReadOnly)
@@ -13,8 +10,10 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from rest_framework_simplejwt.tokens import RefreshToken
-from reviews.models import Category, Genre, Review, Title, User
 
+from permissions import (IsAdministrator, IsAuthorOrModeratorOrAdmin,
+                         IsOwnerOrReadOnly)
+from reviews.models import Category, Genre, Review, Title, User
 from .filters import TitleFilter
 from .serializers import (CategorySerializer, CommentSerializer,
                           GenreSerializer, ReviewSerializer, SignupSerializer,
@@ -174,8 +173,6 @@ class ReviewViewSet(ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        if Review.objects.filter(title=self.get_title(), author=user).exists():
-            raise ValidationError('Вы уже оставили отзыв на это произведение.')
         serializer.save(author=user, title=self.get_title())
 
 

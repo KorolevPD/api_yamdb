@@ -5,8 +5,7 @@ from rest_framework import serializers
 from rest_framework.exceptions import ValidationError
 from rest_framework.validators import UniqueValidator
 
-from reviews.constants import (EMAIL_MAX_LENGHT,
-                               SLUG_MAX_LENGHT)
+from reviews.constants import EMAIL_MAX_LENGHT, SLUG_MAX_LENGHT
 from reviews.models import Category, Comment, Genre, Review, Title, User
 from .utils import generate_confirmation_code
 
@@ -85,8 +84,8 @@ class SignupSerializer(serializers.ModelSerializer):
         validators=[
             RegexValidator(
                 regex=r'^[\w.@+-]+\Z',
-                message="Имя пользователя может содержать только"
-                "буквы, цифры и символы .@+-_"
+                message='Имя пользователя может содержать только'
+                'буквы, цифры и символы .@+-_'
             )
         ]
     )
@@ -168,6 +167,15 @@ class ReviewSerializer(serializers.ModelSerializer):
         model = Review
         fields = ('id', 'text', 'author', 'score', 'pub_date')
         read_only_fields = ('title',)
+
+    def create(self, validated_data):
+        user = self.context['request'].user
+        title = validated_data.get('title')
+
+        if Review.objects.filter(title=title, author=user).exists():
+            raise ValidationError('Вы уже оставили отзыв на это произведение.')
+
+        return super().create(validated_data)
 
 
 class CommentSerializer(serializers.ModelSerializer):

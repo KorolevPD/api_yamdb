@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import MaxValueValidator
 from django.db import models
@@ -8,6 +6,7 @@ from reviews.constants import (ADMIN_ROLE, CONFIRMATION_CODE_LENGTH,
                                DEFAULT_USER_ROLE, MODERATOR_ROLE,
                                NAME_MAX_LENGHT, SLUG_MAX_LENGHT, TEXT_LEN,
                                USER_ROLES, get_roles_max_lenght)
+from .utils import validate_year
 
 
 class User(AbstractUser):
@@ -52,8 +51,7 @@ class Genre(models.Model):
 
 class Title(models.Model):
     name = models.CharField(max_length=NAME_MAX_LENGHT)
-    year = models.SmallIntegerField(
-        validators=[MaxValueValidator(datetime.now().year)])
+    year = models.SmallIntegerField(validators=[validate_year])
     description = models.TextField(null=True)
     genre = models.ManyToManyField(Genre)
     category = models.ForeignKey(
